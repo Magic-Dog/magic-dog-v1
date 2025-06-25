@@ -314,15 +314,15 @@ deploy_magicdog() {
         success "MagicDog启动成功！"
         
         # 显示系统用户信息
-        if [ -f "public/MagicDog.txt" ]; then
+        if [ -f "magicdog-deploy/public/MagicDog.txt" ]; then
             log "系统用户信息已生成："
             echo ""
             echo -e "${GREEN}=================================================="
-            cat public/MagicDog.txt
+            cat magicdog-deploy/public/MagicDog.txt
             echo -e "==================================================${NC}"
             echo ""
         else
-            warn "系统用户信息文件尚未生成，请稍等片刻后查看: cat public/MagicDog.txt"
+            warn "系统用户信息文件尚未生成，请稍等片刻后查看: cat magicdog-deploy/public/MagicDog.txt"
         fi
     else
         error "MagicDog启动失败，请检查日志: $COMPOSE_CMD logs"
