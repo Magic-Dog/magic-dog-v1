@@ -307,7 +307,7 @@ deploy_magicdog() {
     
     # 等待容器启动和初始化
     log "等待服务启动和初始化..."
-    sleep 10
+    sleep 30
     
     # 检查容器状态
     if $COMPOSE_CMD ps | grep -q "Up"; then
