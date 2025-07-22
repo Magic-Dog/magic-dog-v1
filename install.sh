@@ -196,18 +196,57 @@ check_redis() {
 download_project() {
     log "下载MagicDog项目..."
     
-    # 删除旧的安装目录
+    # 如果安装目录存在，需要安全地处理删除
     if [ -d "$INSTALL_DIR" ]; then
-        warn "删除旧的安装目录: $INSTALL_DIR"
-        rm -rf "$INSTALL_DIR"
+        warn "检测到现有安装目录: $INSTALL_DIR"
+        
+        # 检查当前目录是否在安装目录内
+        current_dir=$(pwd)
+        if [[ "$current_dir" == "$INSTALL_DIR"* ]]; then
+            log "当前目录在安装目录内，切换到根目录"
+            cd /
+        fi
+        
+        # 停止可能运行的服务
+        systemctl stop magicdog 2>/dev/null || true
+        
+        # 备份数据目录（如果存在）
+        if [ -d "$INSTALL_DIR/magicdog_linux_deploy/data" ]; then
+            backup_dir="/tmp/magicdog_data_backup_$(date +%Y%m%d_%H%M%S)"
+            log "备份数据目录到: $backup_dir"
+            cp -r "$INSTALL_DIR/magicdog_linux_deploy/data" "$backup_dir" 2>/dev/null || true
+        fi
+        
+        # 删除旧的安装目录
+        log "删除旧的安装目录..."
+        rm -rf "$INSTALL_DIR" 2>/dev/null || {
+            # 如果删除失败，尝试强制删除
+            warn "正常删除失败，尝试强制删除..."
+            rm -rf "$INSTALL_DIR" 2>/dev/null || {
+                error "无法删除安装目录 $INSTALL_DIR，请手动删除后重新运行"
+            }
+        }
     fi
     
+    # 创建安装目录的父目录
+    mkdir -p "$(dirname "$INSTALL_DIR")" 2>/dev/null || true
+    
     # 克隆项目并切换到main分支
-    git clone -b main "$GITHUB_REPO" "$INSTALL_DIR"
+    log "克隆项目到: $INSTALL_DIR"
+    if ! git clone -b main "$GITHUB_REPO" "$INSTALL_DIR"; then
+        error "项目下载失败，请检查网络连接和仓库地址"
+    fi
     
     # 检查关键文件是否存在
     if [ ! -f "$INSTALL_DIR/magicdog_linux_deploy/magicDog" ]; then
         error "关键文件不存在: magicDog 可执行文件"
+    fi
+    
+    # 恢复数据目录（如果有备份）
+    if [ -n "${backup_dir:-}" ] && [ -d "$backup_dir" ]; then
+        log "恢复数据目录..."
+        cp -r "$backup_dir"/* "$INSTALL_DIR/magicdog_linux_deploy/data/" 2>/dev/null || true
+        rm -rf "$backup_dir" 2>/dev/null || true
     fi
     
     # 设置执行权限
