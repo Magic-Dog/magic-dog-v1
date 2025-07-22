@@ -16,8 +16,18 @@ tortoise_last.txt
 aerich.ini
 migrations/
 
+# Database files (any format)
 *.log
 *.sqlite3*
+*.db
+*.sqlite
+app_system*
+
+# Data directories that shouldn't be in git
+data/app_system*
+data/card_cache/
+magicdog_linux_deploy/data/app_system*
+magicdog_linux_deploy/data/card_cache/
 
 .DS_Store
 ._.DS_Store

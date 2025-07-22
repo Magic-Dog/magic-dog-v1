@@ -192,6 +192,24 @@ check_redis() {
     log "✅ Redis运行正常"
 }
 
+# 清理旧数据库文件（确保全新初始化）
+cleanup_old_database() {
+    log "清理可能存在的旧数据库文件..."
+    
+    local data_dir="${INSTALL_DIR}/magicdog_linux_deploy/data"
+    
+    if [ -d "$data_dir" ]; then
+        # 删除数据库文件但保留GeoIP数据
+        rm -f "$data_dir"/app_system* 2>/dev/null || true
+        rm -rf "$data_dir"/card_cache 2>/dev/null || true
+        
+        # 创建空的缓存目录
+        mkdir -p "$data_dir/card_cache" 2>/dev/null || true
+        
+        log "✅ 旧数据库清理完成，确保全新初始化"
+    fi
+}
+
 # 下载项目
 download_project() {
     log "下载MagicDog项目..."
@@ -512,6 +530,7 @@ main() {
     install_dependencies
     check_redis
     download_project
+    cleanup_old_database
     setup_service
     setup_firewall
     start_service
