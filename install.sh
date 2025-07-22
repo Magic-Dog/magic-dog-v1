@@ -6,7 +6,8 @@
 set -e
 
 # 配置变量
-GITHUB_REPO="https://github.com/Magic-Dog/magicdog-linux-deploy.git"
+GITHUB_REPO="https://github.com/Magic-Dog/magic-dog-v1.git"
+GITHUB_RAW_URL="https://raw.githubusercontent.com/Magic-Dog/magic-dog-v1/main"
 INSTALL_DIR="/opt/magicdog"
 SERVICE_NAME="magicdog"
 SERVICE_PORT="8080"
@@ -99,8 +100,8 @@ download_project() {
         rm -rf "$INSTALL_DIR"
     fi
     
-    # 克隆项目
-    git clone "$GITHUB_REPO" "$INSTALL_DIR"
+    # 克隆项目并切换到main分支
+    git clone -b main "$GITHUB_REPO" "$INSTALL_DIR"
     
     # 检查关键文件是否存在
     if [ ! -f "$INSTALL_DIR/magicdog_linux_deploy/magicDog" ]; then
@@ -109,7 +110,7 @@ download_project() {
     
     # 设置执行权限
     chmod +x "$INSTALL_DIR/magicdog_linux_deploy/magicDog"
-    chmod +x "$INSTALL_DIR/magicdog_linux_deploy/start.sh"
+    chmod +x "$INSTALL_DIR/magicdog_linux_deploy/start.sh" 2>/dev/null || true
     
     log "✅ 项目下载完成"
 }
