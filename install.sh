@@ -342,6 +342,103 @@ start_service() {
     fi
 }
 
+# 等待服务完全启动
+wait_for_service() {
+    log "等待MagicDog服务完全启动..."
+    
+    local max_wait=300  # 最大等待时间5分钟
+    local wait_time=0
+    local check_interval=5
+    
+    # 显示启动提示
+    echo ""
+    echo -e "${YELLOW}⏳ 正在启动MagicDog服务，首次启动可能需要较长时间...${NC}"
+    echo ""
+    
+    while [ $wait_time -lt $max_wait ]; do
+        # 检查端口是否监听
+        if command -v netstat &> /dev/null; then
+            if netstat -tlnp 2>/dev/null | grep ":${SERVICE_PORT}" > /dev/null; then
+                log "✅ 检测到端口 ${SERVICE_PORT} 已开始监听"
+                break
+            fi
+        elif command -v ss &> /dev/null; then
+            if ss -tlnp 2>/dev/null | grep ":${SERVICE_PORT}" > /dev/null; then
+                log "✅ 检测到端口 ${SERVICE_PORT} 已开始监听"
+                break
+            fi
+        elif command -v lsof &> /dev/null; then
+            if lsof -i :${SERVICE_PORT} 2>/dev/null | grep LISTEN > /dev/null; then
+                log "✅ 检测到端口 ${SERVICE_PORT} 已开始监听"
+                break
+            fi
+        else
+            # 使用curl测试连接
+            if curl -s --connect-timeout 1 http://localhost:${SERVICE_PORT} >/dev/null 2>&1; then
+                log "✅ 服务已可访问"
+                break
+            fi
+        fi
+        
+        # 显示等待进度
+        dots=""
+        for ((i=0; i<(wait_time/check_interval)%4; i++)); do
+            dots="${dots}."
+        done
+        printf "\r${BLUE}[INFO]${NC} 等待服务启动${dots}    (${wait_time}s/${max_wait}s)"
+        
+        sleep $check_interval
+        wait_time=$((wait_time + check_interval))
+    done
+    
+    echo ""  # 换行
+    
+    if [ $wait_time -ge $max_wait ]; then
+        warn "⚠️  服务启动超时，但安装可能已完成"
+        warn "请手动检查服务状态: systemctl status magicdog"
+        return 1
+    fi
+    
+    # 额外等待几秒确保服务完全就绪
+    log "服务检测成功，等待完全就绪..."
+    sleep 5
+    
+    return 0
+}
+
+# 输出初始化数据
+show_initialization_data() {
+    log "获取系统初始化数据..."
+    
+    local magic_file="${INSTALL_DIR}/magicdog_linux_deploy/static/MagicDog.txt"
+    local public_file="${INSTALL_DIR}/magicdog_linux_deploy/public/MagicDog.txt"
+    
+    # 尝试查找MagicDog.txt文件的位置
+    local found_file=""
+    if [ -f "$public_file" ]; then
+        found_file="$public_file"
+    elif [ -f "$magic_file" ]; then
+        found_file="$magic_file"
+    else
+        # 搜索所有可能的位置
+        found_file=$(find "${INSTALL_DIR}" -name "MagicDog.txt" 2>/dev/null | head -1)
+    fi
+    
+    if [ -n "$found_file" ] && [ -f "$found_file" ]; then
+        echo ""
+        echo -e "${GREEN}🔑 系统初始化数据:${NC}"
+        echo "=========================================="
+        cat "$found_file"
+        echo "=========================================="
+        echo ""
+        log "✅ 初始化数据已显示，请记录上述信息"
+    else
+        warn "⚠️  未找到MagicDog.txt文件，可能需要等待服务完全初始化"
+        warn "文件位置: ${INSTALL_DIR}/magicdog_linux_deploy/public/MagicDog.txt"
+        warn "请稍后手动查看该文件获取初始化数据"
+    fi
+}
+
 # 检查服务是否正常运行
 check_service() {
     log "检查服务运行状态..."
@@ -394,6 +491,12 @@ show_completion_info() {
     echo -e "${BLUE}📝 配置文件位置:${NC}"
     echo "${INSTALL_DIR}/magicdog_linux_deploy/data/"
     echo ""
+    
+    # 显示初始化数据位置提示
+    echo -e "${GREEN}📄 获取初始化数据:${NC}"
+    echo "初始化数据文件: ${INSTALL_DIR}/magicdog_linux_deploy/public/MagicDog.txt"
+    echo "或运行: cat ${INSTALL_DIR}/magicdog_linux_deploy/public/MagicDog.txt"
+    echo ""
 }
 
 # 主安装流程
@@ -412,6 +515,12 @@ main() {
     setup_service
     setup_firewall
     start_service
+    
+    # 等待服务完全启动并显示初始化数据
+    if wait_for_service; then
+        show_initialization_data
+    fi
+    
     check_service
     show_completion_info
     
