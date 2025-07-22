@@ -52,25 +52,65 @@ detect_os() {
     log "检测到系统: $DISTRO $VERSION"
 }
 
+# 检查并修复系统时间
+check_and_fix_time() {
+    log "检查系统时间..."
+    
+    # 检查是否有ntpdate或timedatectl
+    if command -v timedatectl &> /dev/null; then
+        log "使用timedatectl同步时间..."
+        timedatectl set-ntp true 2>/dev/null || true
+        sleep 2
+    elif command -v ntpdate &> /dev/null; then
+        log "使用ntpdate同步时间..."
+        ntpdate -s time.nist.gov 2>/dev/null || ntpdate -s pool.ntp.org 2>/dev/null || true
+    fi
+    
+    # 显示当前时间
+    log "当前系统时间: $(date)"
+}
+
 # 安装依赖包
 install_dependencies() {
     log "安装系统依赖..."
     
     case $OS in
         ubuntu|debian)
-            apt update
-            apt install -y curl wget git redis-server systemd
-            systemctl enable redis-server
-            systemctl start redis-server
+            # 尝试修复apt源问题
+            export DEBIAN_FRONTEND=noninteractive
+            
+            # 更新包列表，忽略时间相关错误
+            apt update -o Acquire::Check-Valid-Until=false || {
+                warn "apt update遇到问题，尝试使用备用方案..."
+                apt update --allow-unauthenticated 2>/dev/null || true
+            }
+            
+            # 安装必要包
+            apt install -y curl wget git redis-server systemd ntpdate 2>/dev/null || {
+                warn "部分包安装失败，尝试单独安装..."
+                apt install -y curl wget git || error "无法安装基础工具"
+                apt install -y redis-server || warn "Redis安装失败，请手动安装"
+                apt install -y systemd || true
+                apt install -y ntpdate || true
+            }
+            
+            systemctl enable redis-server 2>/dev/null || true
+            systemctl start redis-server 2>/dev/null || true
             ;;
         centos|rhel|fedora)
             if command -v dnf &> /dev/null; then
-                dnf install -y curl wget git redis systemd
+                dnf install -y curl wget git redis systemd ntpdate 2>/dev/null || {
+                    dnf install -y curl wget git || error "无法安装基础工具"
+                    dnf install -y redis || warn "Redis安装失败，请手动安装"
+                }
             else
-                yum install -y curl wget git redis systemd
+                yum install -y curl wget git redis systemd ntpdate 2>/dev/null || {
+                    yum install -y curl wget git || error "无法安装基础工具"
+                    yum install -y redis || warn "Redis安装失败，请手动安装"
+                }
             fi
-            systemctl enable redis
-            systemctl start redis
+            systemctl enable redis 2>/dev/null || true
+            systemctl start redis 2>/dev/null || true
             ;;
         *)
             warn "未知的系统类型，请手动安装以下依赖: git, redis, curl, wget"
@@ -263,6 +303,7 @@ main() {
     
     check_root
     detect_os
+    check_and_fix_time
     install_dependencies
     check_redis
     download_project
