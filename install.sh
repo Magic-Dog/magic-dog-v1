@@ -52,22 +52,85 @@ detect_os() {
     log "检测到系统: $DISTRO $VERSION"
 }
 
+# 预安装基础工具
+pre_install_basics() {
+    log "预安装基础工具..."
+    
+    case $OS in
+        ubuntu|debian)
+            export DEBIAN_FRONTEND=noninteractive
+            
+            # 首先尝试安装时间同步工具，忽略时间验证错误
+            apt update -o Acquire::Check-Valid-Until=false -o Acquire::Max-FutureTime=86400 2>/dev/null || true
+            apt install -y ntpdate systemd-timesyncd 2>/dev/null || true
+            ;;
+        centos|rhel|fedora)
+            if command -v dnf &> /dev/null; then
+                dnf install -y ntpdate systemd 2>/dev/null || true
+            else
+                yum install -y ntpdate systemd 2>/dev/null || true
+            fi
+            ;;
+        *)
+            log "跳过预安装步骤"
+            ;;
+    esac
+}
+
 # 检查并修复系统时间
 check_and_fix_time() {
     log "检查系统时间..."
     
-    # 检查是否有ntpdate或timedatectl
+    current_date=$(date)
+    log "当前系统时间: $current_date"
+    
+    # 检查时间是否明显不对（比如年份小于2020）
+    current_year=$(date +%Y)
+    if [ "$current_year" -lt 2020 ]; then
+        warn "检测到系统时间异常，尝试修复..."
+    fi
+    
+    # 尝试各种时间同步方法
+    log "尝试同步系统时间..."
+    
+    # 方法1: 使用timedatectl
     if command -v timedatectl &> /dev/null; then
         log "使用timedatectl同步时间..."
         timedatectl set-ntp true 2>/dev/null || true
-        sleep 2
-    elif command -v ntpdate &> /dev/null; then
-        log "使用ntpdate同步时间..."
-        ntpdate -s time.nist.gov 2>/dev/null || ntpdate -s pool.ntp.org 2>/dev/null || true
+        sleep 3
+        
+        # 如果还不行，手动设置一个合理的时间
+        if [ "$(date +%Y)" -lt 2020 ]; then
+            timedatectl set-time "2025-07-23 12:00:00" 2>/dev/null || true
+        fi
     fi
     
-    # 显示当前时间
-    log "当前系统时间: $(date)"
+    # 方法2: 使用ntpdate
+    if command -v ntpdate &> /dev/null; then
+        log "使用ntpdate同步时间..."
+        ntpdate -s time.nist.gov 2>/dev/null || \
+        ntpdate -s pool.ntp.org 2>/dev/null || \
+        ntpdate -s 0.pool.ntp.org 2>/dev/null || \
+        ntpdate -s 1.pool.ntp.org 2>/dev/null || true
+    fi
+    
+    # 方法3: 使用curl获取网络时间（最后的备用方案）
+    if [ "$(date +%Y)" -lt 2020 ] && command -v curl &> /dev/null; then
+        log "尝试从网络获取时间..."
+        network_time=$(curl -s -I "http://www.google.com" 2>/dev/null | grep -i "^date:" | cut -d' ' -f2- | tr -d '\r' 2>/dev/null || echo "")
+        if [ -n "$network_time" ]; then
+            date -s "$network_time" 2>/dev/null || true
+        fi
+    fi
+    
+    # 最终显示时间
+    final_date=$(date)
+    log "修复后系统时间: $final_date"
+    
+    # 如果时间仍然有问题，给出警告但不停止安装
+    if [ "$(date +%Y)" -lt 2020 ]; then
+        warn "系统时间修复失败，但安装将继续。请在安装完成后手动修复系统时间。"
+    fi
 }
 
 # 安装依赖包
@@ -76,22 +139,21 @@ install_dependencies() {
     
     case $OS in
         ubuntu|debian)
-            # 尝试修复apt源问题
+            # 现在时间应该已经修复，可以正常更新包列表
             export DEBIAN_FRONTEND=noninteractive
             
-            # 更新包列表，忽略时间相关错误
+            # 更新包列表
             apt update -o Acquire::Check-Valid-Until=false || {
                 warn "apt update遇到问题，尝试使用备用方案..."
                 apt update --allow-unauthenticated 2>/dev/null || true
             }
             
-            # 安装必要包
-            apt install -y curl wget git redis-server systemd ntpdate 2>/dev/null || {
+            # 安装剩余的必要包
+            apt install -y curl wget git redis-server systemd 2>/dev/null || {
                 warn "部分包安装失败，尝试单独安装..."
                 apt install -y curl wget git || error "无法安装基础工具"
                 apt install -y redis-server || warn "Redis安装失败，请手动安装"
                 apt install -y systemd || true
-                apt install -y ntpdate || true
             }
             
             systemctl enable redis-server 2>/dev/null || true
@@ -99,12 +161,12 @@ install_dependencies() {
             ;;
         centos|rhel|fedora)
             if command -v dnf &> /dev/null; then
-                dnf install -y curl wget git redis systemd ntpdate 2>/dev/null || {
+                dnf install -y curl wget git redis systemd 2>/dev/null || {
                     dnf install -y curl wget git || error "无法安装基础工具"
                     dnf install -y redis || warn "Redis安装失败，请手动安装"
                 }
             else
-                yum install -y curl wget git redis systemd ntpdate 2>/dev/null || {
+                yum install -y curl wget git redis systemd 2>/dev/null || {
                     yum install -y curl wget git || error "无法安装基础工具"
                     yum install -y redis || warn "Redis安装失败，请手动安装"
                 }
@@ -303,6 +365,7 @@ main() {
     
     check_root
     detect_os
+    pre_install_basics
     check_and_fix_time
     install_dependencies
     check_redis
