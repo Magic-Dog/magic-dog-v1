@@ -1,0 +1,14 @@
+[Unit]
+Description=MagicDog FastAPI Server
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/magicdog
+ExecStart=/opt/magicdog/magicDog
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,34 @@
+{
+  "bin": "357213",
+  "updated_at": "2025-06-18T04:12:28.582604",
+  "query_timestamp": 1750191148.582604,
+  "validation": {
+    "is_valid": true,
+    "is_allowed": true,
+    "rejection_reason": null,
+    "warnings": []
+  },
+  "card_brand": "japan credit bureau",
+  "card_type": "credit",
+  "scheme": "japan credit bureau",
+  "type": "credit",
+  "brand": "unknown",
+  "country": {
+    "code": "JP",
+    "name": "Japan",
+    "emoji": "🇯🇵",
+    "currency": "JPY"
+  },
+  "bank": {
+    "name": ""
+  },
+  "source": "binlist_api",
+  "api_success": true,
+  "risk_assessment": {
+    "risk_level": "low",
+    "risk_factors": [],
+    "score": 0
+  },
+  "cached_at": "2025-06-18T04:12:28.582604",
+  "cache_version": "1.0"
+}
