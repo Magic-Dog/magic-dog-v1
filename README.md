@@ -17,14 +17,14 @@ MagicDog的Linux一键部署包，支持主流Linux发行版的快速安装和�
 
 ### 方式一：一键安装脚本（推荐）
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Magic-Dog/magicdog-linux-deploy/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/Magic-Dog/magic-dog-v1/main/install.sh | sudo bash
 ```
 
 ### 方式二：手动安装
 ```bash
 # 克隆仓库
-git clone https://github.com/Magic-Dog/magicdog-linux-deploy.git
-cd magicdog-linux-deploy
+git clone https://github.com/Magic-Dog/magic-dog-v1.git
+cd magic-dog-v1
 
 # 运行安装脚本
 sudo chmod +x install.sh
@@ -171,7 +171,7 @@ sudo chmod +x /opt/magicdog/magicdog_linux_deploy/magicDog
 ### 自动更新（推荐）
 重新运行安装脚本即可更新到最新版本：
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Magic-Dog/magicdog-linux-deploy/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/Magic-Dog/magic-dog-v1/main/install.sh | sudo bash
 ```
 
 ### 手动更新
@@ -184,8 +184,8 @@ sudo cp -r /opt/magicdog /opt/magicdog.backup.20250723
 
 # 下载新版本
 cd /tmp
-git clone https://github.com/Magic-Dog/magicdog-linux-deploy.git
-cd magicdog-linux-deploy
+git clone https://github.com/Magic-Dog/magic-dog-v1.git
+cd magic-dog-v1
 
 # 运行安装脚本
 sudo ./install.sh
@@ -269,7 +269,7 @@ df -h
 
 1. 查看本文档的故障排除部分
 2. 检查系统日志：`sudo journalctl -u magicdog -f`
-3. 在GitHub仓库提交Issue：https://github.com/Magic-Dog/magicdog-linux-deploy/issues
+3. 在GitHub仓库提交Issue：https://github.com/Magic-Dog/magic-dog-v1/issues
 
 ## 更新日志
 
