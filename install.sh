@@ -77,6 +77,158 @@ pre_install_basics() {
     esac
 }
 
+# 检查系统兼容性
+check_system_compatibility() {
+    log "检查系统兼容性..."
+    
+    # 检查架构
+    arch=$(uname -m)
+    if [ "$arch" != "x86_64" ]; then
+        error "❌ 不支持的系统架构: $arch，目前仅支持 x86_64"
+    fi
+    
+    # 检查GLIBC版本
+    log "检查GLIBC版本..."
+    if command -v ldd >/dev/null 2>&1; then
+        glibc_version=$(ldd --version | head -1 | awk '{print $NF}')
+        log "当前GLIBC版本: $glibc_version"
+        
+        # 检查是否满足最低要求 (2.38)
+        required_version="2.38"
+        if ! awk -v ver="$glibc_version" -v req="$required_version" 'BEGIN{if(ver<req) exit 1}' 2>/dev/null; then
+            warn "⚠️  GLIBC版本可能不兼容"
+            warn "当前版本: $glibc_version"
+            warn "所需版本: >= $required_version"
+            echo ""
+            log "尝试升级系统库..."
+            upgrade_system_libraries
+        else
+            log "✅ GLIBC版本兼容"
+        fi
+    else
+        warn "⚠️  无法检测GLIBC版本"
+    fi
+}
+
+# 升级系统库
+upgrade_system_libraries() {
+    log "升级系统库和运行时环境..."
+    
+    case $OS in
+        ubuntu|debian)
+            # 对于Ubuntu/Debian，尝试升级libc6和相关库
+            export DEBIAN_FRONTEND=noninteractive
+            
+            log "更新包列表并升级系统库..."
+            apt update -o Acquire::Check-Valid-Until=false >/dev/null 2>&1 || true
+            
+            # 升级核心库
+            apt install -y libc6 libc6-dev build-essential >/dev/null 2>&1 || {
+                warn "系统库升级失败，尝试替代方案..."
+            }
+            
+            # 如果是较老的Ubuntu版本，尝试启用更新的源
+            ubuntu_version=$(lsb_release -rs 2>/dev/null || echo "unknown")
+            if [ "$ubuntu_version" != "unknown" ]; then
+                major_version=$(echo "$ubuntu_version" | cut -d. -f1)
+                if [ "$major_version" -lt 22 ]; then
+                    warn "检测到较老的Ubuntu版本($ubuntu_version)，可能需要手动升级系统"
+                    warn "建议运行: sudo apt update && sudo apt upgrade"
+                fi
+            fi
+            ;;
+        centos|rhel|fedora)
+            log "升级glibc和相关库..."
+            if command -v dnf &> /dev/null; then
+                dnf update -y glibc glibc-devel >/dev/null 2>&1 || true
+            else
+                yum update -y glibc glibc-devel >/dev/null 2>&1 || true
+            fi
+            ;;
+        *)
+            warn "未知系统类型，请手动升级系统库"
+            ;;
+    esac
+}
+
+# 测试二进制文件兼容性
+test_binary_compatibility() {
+    log "测试MagicDog二进制文件兼容性..."
+    
+    local binary_path="${INSTALL_DIR}/magicdog_linux_deploy/magicDog"
+    
+    if [ ! -f "$binary_path" ]; then
+        error "二进制文件不存在: $binary_path"
+    fi
+    
+    # 设置执行权限
+    chmod +x "$binary_path"
+    
+    # 测试运行（快速退出测试）
+    if timeout 5 "$binary_path" --help >/dev/null 2>&1 || \
+       timeout 5 "$binary_path" --version >/dev/null 2>&1 || \
+       timeout 5 "$binary_path" -h >/dev/null 2>&1; then
+        log "✅ 二进制文件兼容性测试通过"
+        return 0
+    fi
+    
+    # 如果测试失败，检查具体错误
+    log "检查二进制文件依赖..."
+    if command -v ldd >/dev/null 2>&1; then
+        missing_libs=$(ldd "$binary_path" 2>&1 | grep "not found" || true)
+        if [ -n "$missing_libs" ]; then
+            warn "❌ 发现缺失的库依赖:"
+            echo "$missing_libs"
+            echo ""
+            
+            # 检查是否是GLIBC版本问题
+            if echo "$missing_libs" | grep -q "GLIBC"; then
+                error "❌ GLIBC版本不兼容。请升级系统或联系管理员获取兼容版本的二进制文件。
+
+建议解决方案:
+1. 升级系统到更新版本
+2. 运行: sudo apt update && sudo apt upgrade (Ubuntu/Debian)
+3. 运行: sudo yum update (CentOS/RHEL)
+4. 或联系开发者获取针对您系统的兼容版本"
+            else
+                warn "尝试安装缺失的库依赖..."
+                install_missing_libraries "$missing_libs"
+            fi
+        fi
+    fi
+    
+    # 再次测试
+    if timeout 5 "$binary_path" --help >/dev/null 2>&1 || \
+       timeout 5 "$binary_path" --version >/dev/null 2>&1 || \
+       timeout 5 "$binary_path" -h >/dev/null 2>&1; then
+        log "✅ 二进制文件修复成功"
+        return 0
+    else
+        error "❌ 二进制文件仍然不兼容，请检查系统环境"
+    fi
+}
+
+# 安装缺失的库
+install_missing_libraries() {
+    local missing_output="$1"
+    log "尝试安装缺失的库依赖..."
+    
+    case $OS in
+        ubuntu|debian)
+            # 常见的库依赖
+            apt install -y libc6 libssl3 libssl-dev libffi8 libffi-dev \
+                          zlib1g zlib1g-dev libgcc-s1 libstdc++6 >/dev/null 2>&1 || true
+            ;;
+        centos|rhel|fedora)
+            if command -v dnf &> /dev/null; then
+                dnf install -y glibc openssl-libs libffi zlib gcc-c++ >/dev/null 2>&1 || true
+            else
+                yum install -y glibc openssl-libs libffi zlib gcc-c++ >/dev/null 2>&1 || true
+            fi
+            ;;
+    esac
+}
+
 # 检查并修复系统时间
 check_and_fix_time() {
     log "检查系统时间..."
@@ -525,12 +677,14 @@ main() {
     
     check_root
     detect_os
+    check_system_compatibility
     pre_install_basics
     check_and_fix_time
     install_dependencies
     check_redis
     download_project
     cleanup_old_database
+    test_binary_compatibility
     setup_service
     setup_firewall
     start_service
