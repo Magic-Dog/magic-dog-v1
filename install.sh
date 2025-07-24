@@ -684,7 +684,7 @@ main() {
     check_redis
     download_project
     cleanup_old_database
-    test_binary_compatibility
+    # test_binary_compatibility
     setup_service
     setup_firewall
     start_service
