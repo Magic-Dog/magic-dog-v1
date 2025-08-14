@@ -44,7 +44,7 @@ body {
     margin-bottom: calc(24px * var(--scale-factor, 1));
 }
 .form-group {
-    margin-bottom: calc(10px * var(--scale-factor, 1));
+    margin-bottom: calc(10px * var(--scale-factor, 1)) !important;
     position: relative;
 }
 .form-label {
@@ -57,7 +57,7 @@ body {
 .form-control {
     display: block;
     width: 100%;
-    padding: calc(10px * var(--scale-factor, 1)) calc(14px * var(--scale-factor, 1));
+    /*padding: calc(10px * var(--scale-factor, 1)) calc(14px * var(--scale-factor, 1));*/
     font-size: calc(16px * var(--scale-factor, 1)) !important;
     line-height: 1.5;
     color: #424770;
@@ -1580,7 +1580,7 @@ label + input,
 
 
 .payment-container {
-    max-width: calc(375px * var(--scale-factor)); 
+    max-width: calc(375px * var(--scale-factor));
 }
 
 
@@ -1603,8 +1603,8 @@ label + input,
 
 
 .card-icons i {
-    font-size: calc(15.4px * var(--scale-factor, 1)) !important; 
-    margin-left: calc(4.2px * var(--scale-factor, 1)); 
+    font-size: calc(15.4px * var(--scale-factor, 1)) !important;
+    margin-left: calc(4.2px * var(--scale-factor, 1));
 }
 
 
