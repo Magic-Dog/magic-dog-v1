@@ -50,8 +50,7 @@ body {
 .form-label {
     display: block;
     margin-bottom: calc(8px * var(--scale-factor, 1));
-    font-size: calc(14px * var(--scale-factor, 1));
-    font-weight: 500;
+    font-size: calc(13px * var(--scale-factor, 1));
     color: #525f7f;
     text-align: left !important;
 }
@@ -1172,13 +1171,12 @@ body {
     transform: translateY(-50%);
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 1px;
     pointer-events: none;
 }
 
 .card-logo-img {
-    height: 20px;
-    width: auto;
+    width: 20px;
     border-radius: 3px;
     transition: all 0.2s ease;
     opacity: 1;
@@ -1516,5 +1514,121 @@ label + input,
     text-align: left !important;
     justify-content: flex-start !important;
     align-items: flex-start !important;
+}
+
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 calc(-5px * var(--scale-factor, 1));
+}
+
+.col-6 {
+    flex: 0 0 50%;
+    max-width: 50%;
+    padding: 0 calc(5px * var(--scale-factor, 1));
+}
+
+
+.expiry-cvv-row {
+    display: flex;
+    gap: 0;
+    margin: 0;
+    margin-top: 0;
+}
+
+.expiry-cvv-row .col-expiry {
+    flex: 1;
+    max-width: none;
+    padding: 0;
+}
+
+.expiry-cvv-row .col-cvv {
+    flex: 1;
+    max-width: none;
+    padding: 0;
+}
+
+
+.expiry-cvv-row .form-group {
+    margin-bottom: 0;
+}
+
+
+.card-number-group {
+    margin-bottom: 0 !important;
+}
+
+.card-number-group + .expiry-cvv-row {
+    margin-top: 0;
+}
+
+
+.card-number-group .form-control {
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+}
+
+.expiry-cvv-row .col-expiry .form-control {
+    border-right: none;
+    border-radius: 0 0 0 8px;
+}
+
+.expiry-cvv-row .col-cvv .form-control {
+    border-radius: 0 0 8px 0;
+}
+
+
+.payment-container {
+    max-width: calc(375px * var(--scale-factor)); 
+}
+
+
+.card-number-group .form-control:focus {
+    border-bottom: none;
+    box-shadow: 0 0 0 2px rgba(84, 105, 212, 0.2);
+    border-color: #5469d4;
+}
+
+.expiry-cvv-row .col-expiry .form-control:focus {
+    border-right: none;
+    box-shadow: 0 0 0 2px rgba(84, 105, 212, 0.2);
+    border-color: #5469d4;
+}
+
+.expiry-cvv-row .col-cvv .form-control:focus {
+    box-shadow: 0 0 0 2px rgba(84, 105, 212, 0.2);
+    border-color: #5469d4;
+}
+
+
+.card-icons i {
+    font-size: calc(15.4px * var(--scale-factor, 1)) !important; 
+    margin-left: calc(4.2px * var(--scale-factor, 1)); 
+}
+
+
+@media (max-width: 480px) {
+    .expiry-cvv-row {
+        display: flex;
+        flex-direction: row;
+        gap: 0;
+    }
+    
+    .expiry-cvv-row .col-expiry,
+    .expiry-cvv-row .col-cvv {
+        flex: 1;
+        max-width: 50%;
+    }
+    
+
+    .expiry-cvv-row .col-expiry .form-control {
+        border-right: none;
+        border-radius: 0 0 0 8px;
+    }
+    
+    .expiry-cvv-row .col-cvv .form-control {
+        border-radius: 0 0 8px 0;
+    }
 }
 
