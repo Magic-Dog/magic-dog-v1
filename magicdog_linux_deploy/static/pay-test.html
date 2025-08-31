@@ -163,8 +163,8 @@
                             Payment Method
                         </h4>
                     </div>
-                    <div class="card-body" style="padding: 12px;">
-                        <div id="payment-button-container" 
+                    <div class="card-body" style="padding: 0px;">
+                        <div id="payment-button-container"
                              style="min-height: 250px; border: 2px dashed #e9ecef; border-radius: 8px; padding: 15px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center;">
                             <i class="fas fa-plug" style="font-size: 32px; color: #6c757d; margin-bottom: 10px;"></i>
                             <p style="color: #6c757d; margin: 0; font-size: 13px; font-weight: 500;">
@@ -191,7 +191,7 @@
                         </p>
                     </div>
                     <div class="card-body" style="padding: 30px;">
-                        
+
                         <div class="row">
                             <!-- 左侧：代码集成和故障排除 -->
                             <div class="col-md-8">
@@ -347,6 +347,13 @@
     show-scale-panel="false"
     template_type=""
     src="darcula.js">
+
+// Custom variables for payment form
+const confirmPayment = "Confirm Payment";
+const subtitle = "Please fill in your payment information to complete the purchase";
+const secureInfo = '<i class="fas fa-shield-alt"></i> <a href="#" onclick="window.open(\'https://stripe.com/security\', \'_blank\'); return false;" style="color: #28a745; text-decoration: none;"><span data-lang="secureInfo">Payment information is encrypted</span></a>';
+const poweredByStripe = '<a href="#" onclick="window.open(\'https://stripe.com\', \'_blank\'); return false;" style="color: #6772e5; text-decoration: none;"><span class="stripe-badge" data-lang="poweredByStripe">Powered by Stripe</span></a>';
+
 </script>
 
 </html>
